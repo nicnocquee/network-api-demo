@@ -7,6 +7,7 @@
 
 import Foundation
 import Alamofire
+import SwiftUI
 
 class AlamofireFetcher: FetchCapable {
   let session: Session
@@ -33,7 +34,8 @@ class AlamofireFetcher: FetchCapable {
   func upload<ResponseType>(multipart: [MultipartData],
                             toURL: String,
                             decodeTo: ResponseType.Type,
-                            headers: HTTPHeaders?) async throws -> ResponseType where ResponseType: Decodable {
+                            headers: HTTPHeaders?,
+                            progress: Binding<Double>?) async throws -> ResponseType where ResponseType: Decodable {
     return try await withCheckedThrowingContinuation({ continuation in
       session.upload(multipartFormData: { multipartFormData in
         for multi in multipart {
@@ -44,9 +46,14 @@ class AlamofireFetcher: FetchCapable {
           )
         }
       },
-                to: toURL,
-                headers: headers)
+                     to: toURL,
+                     headers: headers)
         .debugLog()
+        .uploadProgress(closure: { uploadProgress in
+          if let prog = progress {
+            prog.wrappedValue = uploadProgress.fractionCompleted
+          }
+        })
         .validate()
         .responseDecodable(of: ResponseType.self) { response in
           switch response.result {

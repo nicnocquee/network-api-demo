@@ -8,6 +8,7 @@
 import Foundation
 
 import Alamofire
+import SwiftUI
 
 let BASE_URL = "http://localhost:1337"
 
@@ -47,7 +48,8 @@ protocol FetchCapable {
   func upload<ResponseType: Decodable>(multipart: [MultipartData],
                                        toURL: String,
                                        decodeTo: ResponseType.Type,
-                                       headers: HTTPHeaders?) async throws -> ResponseType
+                                       headers: HTTPHeaders?,
+                                       progress: Binding<Double>?) async throws -> ResponseType
 }
 
 protocol AuthProvider {
@@ -66,7 +68,7 @@ class API<Request: APIRequest> {
     self.accessTokenProvider = accessTokenProvider
   }
   
-  func fetch(_ request: Request) async throws -> Request.Response {
+  func fetch(_ request: Request, progress: Binding<Double>? = nil) async throws -> Request.Response {
     let url = "\(BASE_URL)\(request.pathname)"
     var urlRequest = URLRequest(url: URL(string: url)!)
     urlRequest.method = request.method
@@ -80,7 +82,8 @@ class API<Request: APIRequest> {
       return try await self.fetcher.upload(multipart: request.multipartData!,
                                            toURL: url,
                                            decodeTo: Request.Response.self,
-                                           headers: urlRequest.headers)
+                                           headers: urlRequest.headers,
+                                           progress: progress)
     }
     
     if request.body != nil {

@@ -12,6 +12,7 @@ struct ContentView: View {
   @State var isLoading: Bool = false
   @State var counter = 0
   @State var posts = [Post]()
+  @State var progress = 0.0
   
   func createNewPost () async throws -> Post {
     let newPost = Post(id: 0, title: "New title \(counter)", body: "New Body  \(counter)")
@@ -20,6 +21,7 @@ struct ContentView: View {
   }
   
   func uploadCover () async throws -> [Uploaded] {
+    progress = 0.0
     var data: Data?
     if let url = Bundle.main.url(forResource: "ipadmini", withExtension: "png") {
       data = try Data(contentsOf: url)
@@ -28,13 +30,15 @@ struct ContentView: View {
     }
     
     let file = MultipartData(data: data!, name: "files", fileName: "ipadmini-\(counter).png", mimeType: "image/png")
-    let uploadPost = try await API().fetch(UploadRequest(file: file))
+    let uploadPost = try await API().fetch(UploadRequest(file: file), progress: $progress)
     return uploadPost
   }
   
   var body: some View {
     VStack(spacing: 30) {
       Text("Number of posts: \(posts.count)")
+        .padding()
+      Text("Upload progress: \(progress)")
         .padding()
       Text("Counter: \(counter)")
         .padding()
